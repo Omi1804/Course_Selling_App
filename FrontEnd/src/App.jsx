@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect } from "react";
+import axios from "axios";
 import "./App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Signup from "./Components/Signup";
@@ -8,13 +9,14 @@ import AddCourse from "./Components/AddCourse";
 import Courses from "./Components/Courses";
 import EditCourse from "./Components/EditCourse";
 import HomePage from "./Components/HomePage";
+import { BASE_URL } from "./config.js";
 import {
   RecoilRoot,
-  atom,
-  selector,
   useRecoilState,
   useRecoilValue,
+  useSetRecoilState,
 } from "recoil";
+import userState from "./store/atom/user";
 
 const App = () => {
   return (
@@ -23,6 +25,7 @@ const App = () => {
     >
       <BrowserRouter>
         <Header />
+        <InitUser />
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/add-course" element={<AddCourse />} />
@@ -37,3 +40,30 @@ const App = () => {
 };
 
 export default App;
+
+function InitUser() {
+  const setUser = useSetRecoilState(userState);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const response = await axios.get(`${BASE_URL}admin/me`, {
+        headers: {
+          "Content-Type": "application/json",
+          authorization: "Bearer " + localStorage.getItem("token"),
+        },
+      });
+
+      const data = response.data;
+
+      if (data.email) {
+        setUser(data.email);
+      } else {
+        setUser(null);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+  return <></>;
+}

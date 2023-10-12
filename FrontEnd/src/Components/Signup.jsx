@@ -13,17 +13,31 @@ import {
 } from "@mui/material";
 import { green } from "@mui/material/colors";
 import { useNavigate } from "react-router-dom";
+import userState from "../store/atom/user.js";
+import { useRecoilValue, useSetRecoilState, useRecoilState } from "recoil";
 
 const Signup = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  // const [email, setEmail] = useState("");
+  // const [password, setPassword] = useState("");
+  // const { email } = useRecoilValue(userState);
+  // const { password } = useRecoilValue(userState);
+
+  const [user, setUser] = useRecoilState(userState);
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const navigate = useNavigate();
 
+  // const handleChange = (e) => {
+  //   e.target.name == "email"
+  //     ? setEmail(e.target.value)
+  //     : setPassword(e.target.value);
+  // };
+
   const handleChange = (e) => {
-    e.target.name == "email"
-      ? setEmail(e.target.value)
-      : setPassword(e.target.value);
+    const { name, value } = e.target;
+    setUser((prevUser) => ({
+      ...prevUser,
+      [name]: value,
+    }));
   };
 
   const handleSubmit = () => {

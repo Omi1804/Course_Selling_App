@@ -2,30 +2,33 @@ import React, { useState, useEffect } from "react";
 import { Typography, AppBar, useTheme, Button } from "@mui/material";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "../assets/fevicon.png";
+import userState from "../store/atom/user.js";
+import { useRecoilValue } from "recoil";
 
 const Header = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const [email, setEmail] = useState(null);
+  // const [email, setEmail] = useState(null);
+  const { email } = useRecoilValue(userState);
 
-  useEffect(() => {
-    fetch("http://localhost:3000/admin/me", {
-      method: "GET",
-      headers: {
-        authorization: "Bearer " + localStorage.getItem("token"),
-      },
-    }).then((response) => {
-      response.json().then((responseData) => {
-        console.log(responseData);
-        if (responseData.message != "Invalid token!") {
-          setEmail(responseData.email);
-        } else {
-          setEmail(null);
-          console.log(responseData.message);
-        }
-      });
-    });
-  }, [localStorage.getItem("token")]);
+  // useEffect(() => {
+  //   fetch("http://localhost:3000/admin/me", {
+  //     method: "GET",
+  //     headers: {
+  //       authorization: "Bearer " + localStorage.getItem("token"),
+  //     },
+  //   }).then((response) => {
+  //     response.json().then((responseData) => {
+  //       console.log(responseData);
+  //       if (responseData.message != "Invalid token!") {
+  //         setEmail(responseData.email);
+  //       } else {
+  //         setEmail(null);
+  //         console.log(responseData.message);
+  //       }
+  //     });
+  //   });
+  // }, [localStorage.getItem("token")]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
