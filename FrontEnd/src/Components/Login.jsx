@@ -9,52 +9,54 @@ import {
   FormControlLabel,
   Checkbox,
   CssBaseline,
+  Snackbar,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { useRecoilState, useSetRecoilState } from "recoil";
+import userState from "../store/atom/user";
+import axios from "axios";
+import { BASE_URL } from "../config";
 
 const Login = () => {
+  //------------------------------VARIABLES------------------------------//
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const setUser = useSetRecoilState(userState);
   const navigate = useNavigate();
 
+  //------------------------------HANDLERS------------------------------//
   const handleChange = (e) => {
     e.target.name == "email"
       ? setEmail(e.target.value)
       : setPassword(e.target.value);
   };
 
-  const handleSubmit = () => {
-    fetch("http://localhost:3000/admin/login", {
-      method: "POST",
-      body: JSON.stringify({
+  const handleSubmit = async () => {
+    try {
+      const response = await axios.post(`${BASE_URL}admin/login`, {
         email: email,
         password: password,
-      }),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    })
-      .then((response) => {
-        if (!response.ok) {
-          console.log("Response is not OK");
-        }
-        return response.json();
-      })
-      .then((responseData) => {
-        if (responseData.message == "Logged in successfully") {
-          const token = responseData.token;
-          localStorage.setItem("token", token);
-          navigate("/courses");
-        } else if (responseData.message == "Please Signup First!") {
-          console.log("Please Signup First!");
-          navigate("/signup");
-        }
-      })
-      .catch((err) => {
-        console.log("Error" + err);
       });
+
+      const responseData = response.data;
+      if (responseData.message === "Logged in successfully") {
+        const token = responseData.token;
+        localStorage.setItem("token", token);
+        setUser({ email: email });
+        navigate("/courses");
+      }
+    } catch (error) {
+      if (error.response.data.message === "Please Signup First!") {
+        setOpenSnackbar(true);
+        setTimeout(() => {
+          navigate("/signup");
+        }, 2000);
+      }
+    }
   };
 
+  //------------------------------COMPONENTS------------------------------//
   return (
     <Container
       maxWidth="sm"
@@ -66,6 +68,29 @@ const Login = () => {
       borderRadius={2}
     >
       <CssBaseline />
+      <Snackbar
+        open={openSnackbar}
+        autoHideDuration={5000}
+        onClose={() => setOpenSnackbar(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        ContentProps={{
+          style: {
+            backgroundColor: "#004d40",
+            color: "white",
+            borderRadius: "8px",
+          },
+        }}
+        message="Please Sign in first !!!"
+        action={
+          <Button
+            size="small"
+            style={{ color: "#009688" }}
+            onClick={() => setOpenSnackbar(false)}
+          >
+            Close
+          </Button>
+        }
+      />
       <AppBar
         position="relative"
         elevation={0}

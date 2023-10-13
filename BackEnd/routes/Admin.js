@@ -31,7 +31,7 @@ router.post("/signup", async (req, res) => {
     });
 
     if (existingUser) {
-      res.status(403).json({ message: "Admin already exists!" });
+      res.status(400).json({ message: "Admin already exists!" });
     } else {
       const obj = { email, password };
       await Admins.create(obj);
@@ -49,15 +49,21 @@ router.post("/signup", async (req, res) => {
 //Admin Login
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
-  const existingUser = await Admins.findOne({
-    email: email,
-    password: password,
-  });
-  if (existingUser) {
-    const token = jwt.sign({ email, password }, secretKey, { expiresIn: "1h" });
-    res.status(200).json({ message: "Logged in successfully", token: token });
+  if (!email || !password) {
+    res.status(400).json({ message: "Invalid email or password" });
   } else {
-    res.status(401).json({ message: "Please Signup First!" });
+    const existingUser = await Admins.findOne({
+      email: email,
+      password: password,
+    });
+    if (existingUser) {
+      const token = jwt.sign({ email, password }, secretKey, {
+        expiresIn: "1h",
+      });
+      res.status(200).json({ message: "Logged in successfully", token: token });
+    } else {
+      res.status(401).json({ message: "Please Signup First!" });
+    }
   }
 });
 
@@ -71,25 +77,67 @@ router.post("/course", authenticateUser, async (req, res) => {
 });
 
 //Admins Edit an existing Course
+// router.put("/course/:id", authenticateUser, async (req, res) => {
+//   const newCourse = req.body;
+//   const courseId = req.params.id;
+
+//   if (!isValidObjectId(courseId)) {
+//     return res.status(400).send({ message: "Invalid course ID format" });
+//   }
+
+//   try {
+//     const existingCourse = await Courses.findOne({ _id: courseId });
+//     if (existingCourse) {
+//       await Courses.updateOne(existingCourse, newCourse);
+//       const updatedCourse = await Courses.findOne({ _id: courseId });
+//       res.status(200).json({
+//         message: "Course Updated successfully",
+//         course: updatedCourse,
+//       });
+//     } else {
+//       res.status(400).send({ message: "Course not found!" });
+//     }
+//   } catch (err) {
+//     console.log("Error updating course " + err);
+//     res.status(500).send({ message: "Internal Server Error please try again" });
+//   }
+// });
 router.put("/course/:id", authenticateUser, async (req, res) => {
-  const newCourse = req.body;
+  const newCourseData = req.body;
   const courseId = req.params.id;
 
+  // Validate newCourseData here (e.g., check required fields, types, etc.)
+
+  if (!newCourseData || !courseId) {
+    return res.status(400).send({ message: "Invalid course ID format" });
+  }
+
   try {
-    const existingCourse = await Courses.findOne({ _id: courseId });
-    if (existingCourse) {
-      await Courses.updateOne(existingCourse, newCourse);
-      const updatedCourse = await Courses.findOne({ _id: courseId });
+    const existingCourse = await Courses.findById(courseId);
+    if (!existingCourse) {
+      return res.status(404).send({ message: "Course not found!" });
+    }
+
+    // Filter or validate newCourseData fields before updating
+    // For example, only update allowed fields
+
+    try {
+      const updatedCourse = await Courses.findByIdAndUpdate(
+        courseId,
+        newCourseData,
+        { new: true }
+      );
       res.status(200).json({
         message: "Course Updated successfully",
         course: updatedCourse,
       });
-    } else {
-      res.status(400).send({ message: "Course not found!" });
+    } catch (updateError) {
+      console.error("Error updating course:", updateError);
+      res.status(500).send({ message: "Error updating course" });
     }
-  } catch (err) {
-    console.log("Error updating course " + err);
-    res.status(500).send({ message: "Internal Server Error please try again" });
+  } catch (findError) {
+    console.error("Error finding course:", findError);
+    res.status(500).send({ message: "Internal Server Error" });
   }
 });
 

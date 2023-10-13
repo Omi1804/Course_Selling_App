@@ -3,38 +3,45 @@ import { Typography, AppBar, useTheme, Button } from "@mui/material";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "../assets/fevicon.png";
 import userState from "../store/atom/user.js";
-import { useRecoilValue } from "recoil";
+import { useRecoilState, useRecoilValue } from "recoil";
+import axios from "axios";
+import { BASE_URL } from "../config";
 
 const Header = () => {
+  //------------------------------VARIABLES------------------------------//
   const theme = useTheme();
   const navigate = useNavigate();
   // const [email, setEmail] = useState(null);
-  const { email } = useRecoilValue(userState);
+  const [user, setUser] = useRecoilState(userState);
 
-  // useEffect(() => {
-  //   fetch("http://localhost:3000/admin/me", {
-  //     method: "GET",
-  //     headers: {
-  //       authorization: "Bearer " + localStorage.getItem("token"),
-  //     },
-  //   }).then((response) => {
-  //     response.json().then((responseData) => {
-  //       console.log(responseData);
-  //       if (responseData.message != "Invalid token!") {
-  //         setEmail(responseData.email);
-  //       } else {
-  //         setEmail(null);
-  //         console.log(responseData.message);
-  //       }
-  //     });
-  //   });
-  // }, [localStorage.getItem("token")]);
+  //------------------------------HANDLERS------------------------------//
+
+  // to populate the array with email
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await axios.get(`${BASE_URL}admin/me`, {
+          headers: {
+            authorization: "Bearer " + localStorage.getItem("token"),
+          },
+        });
+
+        const responseData = response.data;
+        if (responseData.email != null) {
+          setUser({ email: responseData.email });
+        }
+      } catch (error) {}
+    };
+
+    fetchUser();
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     window.location.href = "/";
   };
 
+  //------------------------------COMPONENTS------------------------------//
   return (
     <div>
       <AppBar
@@ -70,6 +77,13 @@ const Header = () => {
               objectFit: "contain",
               borderRadius: "20%", // circular logo
               boxShadow: theme.shadows[3], // add shadow
+              cursor: "pointer",
+            }}
+            onClick={() => {
+              // if (localStorage.getItem("token") != null) {
+              //   navigate("/courses");
+              // } else {
+              navigate("/");
             }}
           />
           <Typography
@@ -85,7 +99,7 @@ const Header = () => {
             Course Lelo
           </Typography>
         </div>
-        {email == null ? (
+        {user.email == null ? (
           <div className="signinButtons">
             <Link to="/signup">
               <Button
@@ -126,7 +140,7 @@ const Header = () => {
                 fontWeight: "500",
               }}
             >
-              {email}
+              {user.email}
             </Typography>
             <Button
               size="large"

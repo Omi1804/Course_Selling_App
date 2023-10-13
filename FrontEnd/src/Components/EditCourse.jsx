@@ -11,6 +11,7 @@ import {
   TextField,
   CircularProgress,
   Snackbar,
+  Box,
 } from "@mui/material";
 
 const EditCourse = () => {
@@ -39,7 +40,16 @@ const EditCourse = () => {
   }, []);
 
   if (loading) {
-    return <CircularProgress />;
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        height="100vh"
+      >
+        <CircularProgress />
+      </Box>
+    );
   }
 
   if (error) {

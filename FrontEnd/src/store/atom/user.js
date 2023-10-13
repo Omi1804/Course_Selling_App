@@ -4,7 +4,6 @@ const userState = atom({
   key: "userState",
   default: {
     email: null,
-    password: null,
   },
 });
 

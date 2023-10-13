@@ -15,53 +15,58 @@ import { green } from "@mui/material/colors";
 import { useNavigate } from "react-router-dom";
 import userState from "../store/atom/user.js";
 import { useRecoilValue, useSetRecoilState, useRecoilState } from "recoil";
+import axios from "axios";
+import { BASE_URL } from "../config.js";
 
 const Signup = () => {
-  // const [email, setEmail] = useState("");
-  // const [password, setPassword] = useState("");
-  // const { email } = useRecoilValue(userState);
-  // const { password } = useRecoilValue(userState);
+  //------------------------------VARIABLES------------------------------//
 
-  const [user, setUser] = useRecoilState(userState);
-  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const setUserState = useSetRecoilState(userState);
+
+  const [openSnackbar, setOpenSnackbar] = useState(false); //for successfull signup
+  const [openSnackbar2, setOpenSnackbar2] = useState(false); //for already existing users
   const navigate = useNavigate();
 
-  // const handleChange = (e) => {
-  //   e.target.name == "email"
-  //     ? setEmail(e.target.value)
-  //     : setPassword(e.target.value);
-  // };
+  //------------------------------HANDLERS------------------------------//
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setUser((prevUser) => ({
-      ...prevUser,
-      [name]: value,
-    }));
+    e.target.name == "email"
+      ? setEmail(e.target.value)
+      : setPassword(e.target.value);
   };
 
-  const handleSubmit = () => {
-    fetch("http://localhost:3000/admin/signup", {
-      method: "POST",
-      body: JSON.stringify({
+  const handleSubmit = async () => {
+    try {
+      const response = await axios.post(`${BASE_URL}admin/signup`, {
         email: email,
         password: password,
-      }),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }).then((response) => {
-      response.json().then((responseData) => {
-        if (responseData.message == "Admin already exists!") {
-          setOpenSnackbar(true);
-          setTimeout(() => {
-            navigate("/login");
-          }, 3000);
-        }
       });
-    });
+
+      const responseData = await response.data;
+      if (responseData.message == "Admin created successfully") {
+        localStorage.setItem("token", responseData.token);
+        setOpenSnackbar(true);
+        setTimeout(() => {
+          navigate("/login");
+        }, 3000);
+      }
+    } catch (error) {
+      if (
+        error.response &&
+        error.response.status === 400 &&
+        error.response.data.message === "Admin already exists!"
+      ) {
+        setOpenSnackbar2(true);
+        setTimeout(() => {
+          navigate("/login");
+        }, 3000);
+      }
+    }
   };
 
+  //------------------------------COMPONENTS------------------------------//
   return (
     <Container
       maxWidth="sm"
@@ -86,6 +91,29 @@ const Signup = () => {
           },
         }}
         message="Signed up successfully! Now login."
+        action={
+          <Button
+            size="small"
+            style={{ color: "#009688" }}
+            onClick={() => setOpenSnackbar(false)}
+          >
+            Close
+          </Button>
+        }
+      />
+      <Snackbar
+        open={openSnackbar2}
+        autoHideDuration={5000}
+        onClose={() => setOpenSnackbar(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        ContentProps={{
+          style: {
+            backgroundColor: "#004d40",
+            color: "white",
+            borderRadius: "8px",
+          },
+        }}
+        message="You already have an account please Login."
         action={
           <Button
             size="small"

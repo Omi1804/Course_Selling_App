@@ -10,12 +10,7 @@ import Courses from "./Components/Courses";
 import EditCourse from "./Components/EditCourse";
 import HomePage from "./Components/HomePage";
 import { BASE_URL } from "./config.js";
-import {
-  RecoilRoot,
-  useRecoilState,
-  useRecoilValue,
-  useSetRecoilState,
-} from "recoil";
+import { RecoilRoot, useRecoilValue, useSetRecoilState } from "recoil";
 import userState from "./store/atom/user";
 
 const App = () => {
@@ -25,7 +20,7 @@ const App = () => {
     >
       <BrowserRouter>
         <Header />
-        <InitUser />
+        {/* <InitUser /> */}
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/add-course" element={<AddCourse />} />
@@ -39,31 +34,37 @@ const App = () => {
   );
 };
 
+// const InitUser = () => {
+//   const setUser = useSetRecoilState(userState);
+
+//   const fetchUser = async () => {
+//     try {
+//       const response = await axios.post(`${BASE_URL}admin/me`, {
+//         headers: {
+//           authorization: "Bearer " + localStorage.getItem("token"),
+//         },
+//       });
+
+//       const responseData = response.data;
+//       if (responseData.email) {
+//         setUser({
+//           email: responseData.email,
+//         });
+//       } else {
+//         setUser({
+//           email: null,
+//         });
+//       }
+//     } catch (error) {
+//       setUser({
+//         email: null,
+//       });
+//     }
+//   };
+
+//   useEffect(() => {
+//     fetchUser();
+//   }, []);
+// };
+
 export default App;
-
-function InitUser() {
-  const setUser = useSetRecoilState(userState);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const response = await axios.get(`${BASE_URL}admin/me`, {
-        headers: {
-          "Content-Type": "application/json",
-          authorization: "Bearer " + localStorage.getItem("token"),
-        },
-      });
-
-      const data = response.data;
-
-      if (data.email) {
-        setUser(data.email);
-      } else {
-        setUser(null);
-      }
-    };
-
-    fetchUser();
-  }, []);
-
-  return <></>;
-}
