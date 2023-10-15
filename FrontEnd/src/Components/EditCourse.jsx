@@ -13,31 +13,45 @@ import {
   Snackbar,
   Box,
 } from "@mui/material";
+import axios from "axios";
+import { BASE_URL } from "../config";
+import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
+import { courseState } from "../store/atom/courses";
+import {
+  courseTitle,
+  coursePrice,
+  courseImage,
+  courseDescription,
+} from "../store/selector/course";
 
 const EditCourse = () => {
   const { courseId } = useParams();
-  const [course, setCourse] = useState(null);
+  const setCourse = useSetRecoilState(courseState);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch(`http://localhost:3000/courses/${courseId}`, {
-      method: "GET",
-      headers: {
-        authorization: "Bearer " + localStorage.getItem("token"),
-      },
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        setCourse(data);
+    const updateCourse = async () => {
+      try {
+        const response = await axios
+          .get(`${BASE_URL}courses/${courseId}`, {
+            headers: {
+              authorization: "Bearer " + localStorage.getItem("token"),
+            },
+          })
+          .then((response) => {
+            setCourse({ course: response.data.course });
+            setLoading(false);
+          });
+      } catch (error) {
+        setError(error.message);
         setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
-      });
-  }, []);
+      }
+    };
+
+    updateCourse();
+  }, [courseId, setCourse]);
 
   if (loading) {
     return (
@@ -58,7 +72,7 @@ const EditCourse = () => {
 
   return (
     <>
-      <GrayTopper title={course.title} />
+      <GrayTopper />
       <Grid
         container
         spacing={4}
@@ -71,7 +85,7 @@ const EditCourse = () => {
           sm={12}
           style={{ display: "flex", justifyContent: "center" }}
         >
-          <CourseCard course={course} />
+          <CourseCard />
         </Grid>
         <Grid
           item
@@ -80,7 +94,7 @@ const EditCourse = () => {
           sm={12}
           style={{ display: "flex", justifyContent: "center" }}
         >
-          <UpdateCourse course={course} setCourse={setCourse} />
+          <UpdateCourse />
         </Grid>
       </Grid>
       <Button
@@ -105,7 +119,8 @@ const EditCourse = () => {
   );
 };
 
-function GrayTopper({ title }) {
+function GrayTopper() {
+  const title = useRecoilValue(courseTitle);
   return (
     <div
       style={{
@@ -124,14 +139,18 @@ function GrayTopper({ title }) {
   );
 }
 
-function CourseCard({ course }) {
+function CourseCard() {
   const navigate = useNavigate();
+  const courseDetails = useRecoilValue(courseState);
+  const title = useRecoilValue(courseTitle);
+  const description = useRecoilValue(courseDescription);
+  const imageLink = useRecoilValue(courseImage);
+
   const deleteCourse = async () => {
     try {
-      const response = await fetch(
-        "http://localhost:3000/admin/course/" + course._id,
+      const response = await axios.delete(
+        `${BASE_URL}admin/course/${courseDetails.course._id}`,
         {
-          method: "DELETE",
           headers: {
             "Content-Type": "application/json",
             authorization: "Bearer " + localStorage.getItem("token"),
@@ -139,19 +158,13 @@ function CourseCard({ course }) {
         }
       );
 
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-
-      const data = await response.json();
-
-      if (data.message === "Course successfully deleted.") {
-        window.location.href = "/courses";
+      if (response.data.message === "Course successfully deleted.") {
+        navigate("/courses");
       } else {
         console.log("Course could not be deleted");
       }
     } catch (error) {
-      console.error("There was a problem with the fetch operation:", error);
+      console.error("There was a problem:", error);
     }
   };
 
@@ -161,18 +174,16 @@ function CourseCard({ course }) {
         component="img"
         alt="Course Image"
         height="140"
-        image={course.imageLink}
+        image={imageLink}
       />
       <CardContent>
         <Typography variant="h5" gutterBottom>
-          {course.title}
+          {title}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {course.description}
+          {description}
         </Typography>
-        <Typography variant="body2" pt={2} style={{ color: "#01B7FF" }}>
-          For Just - {course.price}$
-        </Typography>
+        <Price />
       </CardContent>
 
       <CardActions>
@@ -184,11 +195,23 @@ function CourseCard({ course }) {
   );
 }
 
-function UpdateCourse({ course, setCourse }) {
-  const [title, setTitle] = useState(course.title);
-  const [description, setDescription] = useState(course.description);
-  const [imageLink, setImageLink] = useState(course.imageLink);
-  const [price, setPrice] = useState(course.price);
+function Price() {
+  const price = useRecoilValue(coursePrice);
+  return (
+    <Typography variant="body2" pt={2} style={{ color: "#01B7FF" }}>
+      For Just - {price}$
+    </Typography>
+  );
+}
+
+function UpdateCourse() {
+  const [courseDetails, setCourseDetails] = useRecoilState(courseState);
+  const [title, setTitle] = useState(courseDetails.course.title);
+  const [description, setDescription] = useState(
+    courseDetails.course.description
+  );
+  const [imageLink, setImageLink] = useState(courseDetails.course.imageLink);
+  const [price, setPrice] = useState(courseDetails.course.price);
 
   const handleChange = (e) => {
     switch (e.target.name) {
@@ -204,28 +227,40 @@ function UpdateCourse({ course, setCourse }) {
       case "imageLink":
         setImageLink(e.target.value);
         break;
+      default:
+        break;
     }
   };
 
-  const handleUpdate = () => {
-    fetch("http://localhost:3000/admin/course/" + course._id, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        authorization: "Bearer " + localStorage.getItem("token"),
-      },
-      body: JSON.stringify({
-        title: title,
-        description: description,
-        imageLink: imageLink,
-        price: price,
-        published: true,
-      }),
-    }).then((response) => {
-      response.json().then((data) => {
-        setCourse(data.course);
-      });
-    });
+  const handleUpdate = async () => {
+    try {
+      const response = await fetch(
+        `${BASE_URL}admin/course/${courseDetails.course._id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            title,
+            description,
+            imageLink,
+            price,
+            published: true,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Update failed");
+      }
+
+      const data = await response.json();
+      setCourseDetails({ course: data.course });
+    } catch (error) {
+      console.error("Error updating course:", error);
+    }
   };
 
   return (

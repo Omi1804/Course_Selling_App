@@ -117,10 +117,6 @@ router.put("/course/:id", authenticateUser, async (req, res) => {
     if (!existingCourse) {
       return res.status(404).send({ message: "Course not found!" });
     }
-
-    // Filter or validate newCourseData fields before updating
-    // For example, only update allowed fields
-
     try {
       const updatedCourse = await Courses.findByIdAndUpdate(
         courseId,
