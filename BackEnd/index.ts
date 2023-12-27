@@ -1,14 +1,15 @@
-const express = require("express");
+import express from "express";
 const app = express();
-const mongoose = require("mongoose");
-const cors = require("cors");
-const bodyParser = require("body-parser");
+import mongoose from "mongoose";
+import cors from "cors";
+import bodyParser from "body-parser";
 require("dotenv").config();
 const PORT = process.env.PORT || 5000;
-const userRouter = require("./routes/user.js");
-const adminRouter = require("./routes/Admin.js");
-const { authenticateUser } = require("./middlewares/auth.js");
-const { Courses } = require("./database/database.js");
+import userRouter from "./routes/user";
+import adminRouter from "./routes/Admin";
+import { authenticateUser } from "./middlewares/auth";
+import { Courses } from "./database/database";
+const mongodbUri = process.env.MONGODB_URI;
 //Other logics
 
 app.use(cors());
@@ -45,10 +46,12 @@ app.get("/courses/:courseId", authenticateUser, async (req, res) => {
 });
 
 //Connection
+if (!mongodbUri) {
+  console.log("please define a MongoDB connection");
+  process.exit(1);
+}
 mongoose
-  .connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
+  .connect(mongodbUri, {
     dbName: "mernCourse",
   })
   .then(() => {

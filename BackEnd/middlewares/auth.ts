@@ -1,9 +1,16 @@
-const jwt = require("jsonwebtoken");
-const secretKey = process.env.JWT_Secret;
-const { Admins, Users } = require("../database/database.js");
+import jwt from "jsonwebtoken";
+import { Admins, Users } from "../database/database";
+import { Request, Response, NextFunction } from "express";
+
+const secretKey = process.env.JWT_Secret as string;
+if (!secretKey) {
+  throw new Error(
+    "JWT Secret Key is not defined in the environment variables."
+  );
+}
 
 //-----------------------Authentication logics-----------------------//
-const authenticateUser = (req, res, next) => {
+const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {
@@ -16,7 +23,14 @@ const authenticateUser = (req, res, next) => {
     return res.status(401).json({ message: "Token missing or malformed!" });
   }
 
-  jwt.verify(token, secretKey, async (err, data) => {
+  if (!secretKey) {
+    console.log("Token missing or malformed secret key");
+    return res
+      .status(401)
+      .json({ message: "Token missing or malmalformed secret key" });
+  }
+
+  jwt.verify(token, secretKey, async (err, data: any) => {
     if (err) {
       return res.status(401).json({ message: "Invalid token!" });
     }
@@ -32,17 +46,19 @@ const authenticateUser = (req, res, next) => {
     if (!existingUser) {
       return res.status(403).json({ message: "User not found!" });
     }
-
-    req.user = data;
+    // req.user = data;
+    //now we are storing the email and password in the headers
+    req.headers["userEmail"] = existingUser.email;
+    req.headers["userPassword"] = existingUser.password;
     next();
   });
 };
 
-function authenticateUser2(req, res, next) {
+function authenticateUser2(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   if (authHeader) {
     const token = authHeader.split(" ")[1];
-    jwt.verify(token, secretKey, async (err, data) => {
+    jwt.verify(token, secretKey, async (err, data: any) => {
       if (err) {
         res.status(500).json({ message: err.message });
       }
@@ -53,7 +69,11 @@ function authenticateUser2(req, res, next) {
         password: password,
       });
       if (existingUser) {
-        req.user = existingUser;
+        // req.user = existingUser;
+
+        //now we are storing the email and password in the headers
+        req.headers["userEmail"] = existingUser.email;
+        req.headers["userPassword"] = existingUser.password;
         next();
       } else {
         res.status(403).json({ message: "User does not exist" });
@@ -64,7 +84,4 @@ function authenticateUser2(req, res, next) {
   }
 }
 
-module.exports = {
-  authenticateUser,
-  authenticateUser2,
-};
+export { authenticateUser, authenticateUser2 };

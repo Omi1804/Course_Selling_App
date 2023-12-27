@@ -1,14 +1,15 @@
-const express = require("express");
-const jwt = require("jsonwebtoken");
+import express from "express";
+import jwt from "jsonwebtoken";
 const secretKey = process.env.JWT_Secret;
-const { Admins, Courses } = require("../database/database.js");
-const { authenticateUser } = require("../middlewares/auth.js");
+import { Admins, Courses } from "../database/database";
+import { authenticateUser } from "../middlewares/auth";
 
 const router = express.Router();
 //-----------------------Admin Routes-----------------------//
 
 router.get("/me", authenticateUser, (req, res) => {
-  const email = req.user.email;
+  const { userEmail } = req.headers;
+  const email = userEmail;
   if (email) {
     res.status(200).json({ email });
   } else {
@@ -35,6 +36,12 @@ router.post("/signup", async (req, res) => {
     } else {
       const obj = { email, password };
       await Admins.create(obj);
+      if (!secretKey) {
+        console.log("Token missing or malformed secret key");
+        return res
+          .status(401)
+          .json({ message: "Token missing or malmalformed secret key" });
+      }
       const token = jwt.sign(obj, secretKey, {
         expiresIn: "1h",
       });
@@ -57,6 +64,12 @@ router.post("/login", async (req, res) => {
       password: password,
     });
     if (existingUser) {
+      if (!secretKey) {
+        console.log("Token missing or malformed secret key");
+        return res
+          .status(401)
+          .json({ message: "Token missing or malmalformed secret key" });
+      }
       const token = jwt.sign({ email, password }, secretKey, {
         expiresIn: "1h",
       });
@@ -161,4 +174,4 @@ router.delete("/course/:courseId", authenticateUser, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

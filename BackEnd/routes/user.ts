@@ -1,8 +1,8 @@
-const express = require("express");
-const jwt = require("jsonwebtoken");
+import express from "express";
+import jwt from "jsonwebtoken";
 const secretKey = process.env.JWT_Secret;
-const { Users, Courses } = require("../database/database.js");
-const { authenticateUser2 } = require("../middlewares/auth");
+import { Users, Courses } from "../database/database";
+import { authenticateUser2 } from "../middlewares/auth";
 
 const router = express.Router();
 
@@ -24,6 +24,12 @@ router.post("/singin", async (req, res) => {
     } else {
       const obj = { email, password };
       await Users.create(obj);
+      if (!secretKey) {
+        console.log("Token missing or malformed secret key");
+        return res
+          .status(401)
+          .json({ message: "Token missing or malmalformed secret key" });
+      }
       const token = jwt.sign(obj, secretKey, { expiresIn: "1h" });
       res
         .status(200)
@@ -43,6 +49,12 @@ router.post("/login", async (req, res) => {
       password: password,
     });
     if (existingUser) {
+      if (!secretKey) {
+        console.log("Token missing or malformed secret key");
+        return res
+          .status(401)
+          .json({ message: "Token missing or malmalformed secret key" });
+      }
       const token = jwt.sign({ email, password }, secretKey, {
         expiresIn: "1h",
       });
@@ -63,12 +75,14 @@ router.get("/courses", authenticateUser2, async (req, res) => {
 
 //User parchase the course
 router.post("/courses/:courseId", authenticateUser2, async (req, res) => {
+  const { userEmail } = req.headers;
+  const { userPassword } = req.headers;
   const courseId = req.params.courseId;
   const existingCourse = await Courses.findById(courseId);
   if (existingCourse) {
     const user = await Users.findOne({
-      email: req.user.email,
-      password: req.user.password,
+      email: userEmail,
+      password: userPassword,
     });
     if (user) {
       user.purchasedCourses.push(existingCourse);
@@ -84,11 +98,15 @@ router.post("/courses/:courseId", authenticateUser2, async (req, res) => {
 
 //User can see all his courses
 router.get("/purchasedCourses", authenticateUser2, async (req, res) => {
+  const { userEmail } = req.headers;
+  const { userPassword } = req.headers;
   const userCourses = await Users.findOne({
-    email: req.user.email,
-    password: req.user.password,
+    email: userEmail,
+    password: userPassword,
   }).populate("purchasedCourses");
-  res.status(200).json(userCourses.purchasedCourses);
+  if (userCourses) {
+    res.status(200).json(userCourses.purchasedCourses);
+  }
 });
 
-module.exports = router;
+export default router;
