@@ -58,7 +58,7 @@ const Courses = () => {
                     {item.title}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {item.description}
+                    {item.description.substr(0, 150) + "..."}
                   </Typography>
                 </CardContent>
                 <CardActions>
