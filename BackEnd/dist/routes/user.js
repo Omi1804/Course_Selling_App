@@ -86,8 +86,8 @@ router.get("/courses", auth_1.authenticateUser2, (req, res) => __awaiter(void 0,
 }));
 //User parchase the course
 router.post("/courses/:courseId", auth_1.authenticateUser2, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { userEmail } = req.headers;
-    const { userPassword } = req.headers;
+    const userEmail = req.headers.userEmail; // Type casting for clarity
+    const userPassword = req.headers.userPassword; // Type casting for clarity
     const courseId = req.params.courseId;
     const existingCourse = yield database_1.Courses.findById(courseId);
     if (existingCourse) {
@@ -96,7 +96,7 @@ router.post("/courses/:courseId", auth_1.authenticateUser2, (req, res) => __awai
             password: userPassword,
         });
         if (user) {
-            user.purchasedCourses.push(existingCourse);
+            user.purchasedCourses.push(existingCourse._id);
             yield user.save();
             res.status(200).json({ message: "Course purchased successfully!" });
         }
@@ -116,6 +116,8 @@ router.get("/purchasedCourses", auth_1.authenticateUser2, (req, res) => __awaite
         email: userEmail,
         password: userPassword,
     }).populate("purchasedCourses");
-    res.status(200).json(userCourses.purchasedCourses);
+    if (userCourses) {
+        res.status(200).json(userCourses.purchasedCourses);
+    }
 }));
 exports.default = router;
